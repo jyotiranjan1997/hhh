@@ -1,27 +1,27 @@
 const User = require("../models/User");
 const jwt = require("jsonwebtoken");
-const CryptoJS = require("crypto-js");
+const bcrypt = require("bcrypt");
 
 /* USER SIGNUP */
 const userSignup = async (req, res) => {
   const { firstName, lastName, email, phone, password } = req.body;
-
+  console.log(req.body);
   try {
-    const newUser = new User({
-      firstName,
-      lastName,
-      email,
-      phone,
-      password: CryptoJS.AES.encrypt(
-        password,
-        process.env.PASS_SECRET
-      ).toString(),
-    });
-
-    const savedUser = await newUser.save();
-    res.status(201).json({
-      message: "Signup successful",
-      signupUser: savedUser,
+    bcrypt.hash(password, 7, async function (err, hash) {
+      if (err) {
+        res.send({ err: "Error" });
+      } else {
+        const savedUser = User.create({
+          firstName,
+          lastName,
+          email,
+          phone,
+          password: hash,
+        });
+        res.status(201).json({
+          message: "Signup successful",
+        });
+      }
     });
   } catch (err) {
     res.status(500).json(err);
@@ -32,45 +32,36 @@ const userSignup = async (req, res) => {
 const userLogin = async (req, res) => {
   try {
     const user = await User.findOne({ email: req.body.email });
-    !user && res.status(401).json("Credentials doesn't exist !");
+    if (user) {
+      bcrypt.compare(req.body.password, user.password, function (err, result) {
+        if (err) {
+          res.status(401).json("Password doesn't match !");
+        }
+        if (result) {
+          const accessToken = jwt.sign(
+            {
+              id: user._id,
+              isAdmin: user.isAdmin,
+            },
+            process.env.JWT_SECRET,
+            {
+              expiresIn: "3d",
+            }
+          );
+          res.send({ msg: "Login Successfully", token: accessToken });
+        }
 
-    const hashedPassword = CryptoJS.AES.decrypt(
-      user.password,
-      process.env.PASS_SECRET
-    );
-
-    const OriginalPassword = hashedPassword.toString(CryptoJS.enc.Utf8);
-
-    OriginalPassword !== req.body.password &&
+        
+      });
+    } else {
       res.status(401).json("Password doesn't match !");
-
-    const accessToken = jwt.sign(
-      {
-        id: user._id,
-        isAdmin: user.isAdmin,
-      },
-      process.env.JWT_SECRET,
-      {
-        expiresIn: "3d",
-      }
-    );
-
-    const { password, ...others } = user._doc;
-
-    res.status(200).json({
-      message: "Login successful",
-      loginUser: {
-        ...others,
-        accessToken,
-      },
-    });
+    }
   } catch (err) {
     res.status(500).json(err);
   }
 };
 
 /* GET ALL USERS */
-
 
 const getUserCount = async (req, res) => {
   console.log("cc");
@@ -84,19 +75,15 @@ const getUserCount = async (req, res) => {
 
 const getUsers = async (req, res) => {
   const page = req.params.Page;
-  const skip = (+page * 5)-5;
+  const skip = +page * 5 - 5;
 
   try {
-    const users = await User.find()
+    const users = await User.find();
     res.status(200).json(users);
   } catch (err) {
     res.status(500).json(err);
   }
 };
-
-
-
-
 
 /* GET USER BY ID */
 const getUserById = async (req, res) => {
@@ -113,7 +100,7 @@ const getUserById = async (req, res) => {
 
 const deleteUser = async (req, res) => {
   try {
-    await User.findByIdAndDelete({_id:req.params.id});
+    await User.findByIdAndDelete({ _id: req.params.id });
     res.status(200).json("User has been deleted...!");
   } catch (err) {
     res.status(500).json(err);
