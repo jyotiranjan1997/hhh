@@ -2,11 +2,9 @@ const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const userRoutes = require("./routes/users");
-const productRoute = require("./routes/products");
-const cartRoutes = require("./routes/carts");
-const orderRoute = require("./routes/orders");
 const dotenv = require("dotenv");
 const navbarRoutes = require("./routes/navbar");
+const userdataRoute = require("./routes/userdata");
 dotenv.config();
 
 const app = express();
@@ -36,6 +34,7 @@ app.get("/", (req, res) => {
 
 /* ROUTES */
 app.use("/users", userRoutes);
+app.use("/userdata", userdataRoute);
 // app.use("/products", productRoute);
 // app.use("/carts", cartRoutes);
 // app.use("/orders", orderRoute);
