@@ -11,7 +11,7 @@ const userSignup = async (req, res) => {
       if (err) {
         res.send({ err: "Error" });
       } else {
-        const savedUser = User.create({
+        await User.create({
           firstName,
           lastName,
           email,
@@ -50,8 +50,6 @@ const userLogin = async (req, res) => {
           );
           res.send({ msg: "Login Successfully", token: accessToken });
         }
-
-        
       });
     } else {
       res.status(401).json("Password doesn't match !");
