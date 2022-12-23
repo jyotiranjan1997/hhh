@@ -29,14 +29,13 @@ userRoutes.get("/single", CartMiddleWare, async (req, res) => {
 });
 
 userRoutes.patch("/update", CartMiddleWare, async (req, res) => {
-  console.log("kkk");
   const { userId } = req.body;
-  const { name, email } = req.body;
+  const payloadd = req.body;
 
   try {
     const user = User.findOne({ _id: userId });
     if (user) {
-      await User.findByIdAndUpdate({ _id: userId }, { name, email });
+      await User.findByIdAndUpdate({ _id: userId }, payloadd);
       res.send({ msg: "updated success" });
     }
   } catch (err) {
